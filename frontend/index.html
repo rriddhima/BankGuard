@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BankGuard — Fraud Detection Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: #1a1d27;
+      border-bottom: 1px solid #2d3148;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo { font-size: 20px; font-weight: 700; color: #7c6af7; }
+    .logo span { color: #e2e8f0; }
+    .nav-badge {
+      margin-left: auto;
+      background: #1e2a1e;
+      color: #4ade80;
+      border: 1px solid #2d4a2d;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 24px; }
+
+    h2 { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase;
+         letter-spacing: 1px; margin-bottom: 16px; }
+
+    /* ── STAT CARDS ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .stat-label { font-size: 12px; color: #64748b; margin-bottom: 8px; }
+    .stat-value { font-size: 28px; font-weight: 700; }
+    .stat-value.purple { color: #7c6af7; }
+    .stat-value.green  { color: #4ade80; }
+    .stat-value.red    { color: #f87171; }
+    .stat-value.amber  { color: #fbbf24; }
+
+    /* ── MAIN GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2d3148;
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    /* ── FORM ── */
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 13px; color: #94a3b8; margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      background: #0f1117;
+      border: 1px solid #2d3148;
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: #e2e8f0;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: #7c6af7; }
+    select option { background: #1a1d27; }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: #7c6af7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #6854e8; }
+    .btn:disabled { background: #3d3d5c; cursor: not-allowed; }
+
+    /* ── RESULT BOX ── */
+    #result-box {
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 10px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    #result-box.safe   { background: #1a2e1a; border: 1px solid #2d4a2d; }
+    #result-box.fraud  { background: #2e1a1a; border: 1px solid #4a2d2d; }
+    #result-box.medium { background: #2e2a1a; border: 1px solid #4a3d2d; }
+
+    .result-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .result-icon { font-size: 24px; }
+    .result-title { font-size: 16px; font-weight: 700; }
+    .result-title.safe   { color: #4ade80; }
+    .result-title.fraud  { color: #f87171; }
+    .result-title.medium { color: #fbbf24; }
+
+    .result-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; color: #94a3b8; }
+    .result-meta span { display: flex; flex-direction: column; gap: 2px; }
+    .result-meta strong { color: #e2e8f0; font-size: 14px; }
+
+    /* ── RISK BAR ── */
+    .risk-bar-wrap { margin-top: 14px; }
+    .risk-bar-label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+    .risk-bar-bg { background: #0f1117; border-radius: 6px; height: 8px; overflow: hidden; }
+    .risk-bar-fill { height: 100%; border-radius: 6px; transition: width 0.6s ease; }
+
+    /* ── TRANSACTION TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; padding: 10px 12px; color: #64748b; font-weight: 500;
+         border-bottom: 1px solid #2d3148; white-space: nowrap; }
+    td { padding: 10px 12px; border-bottom: 1px solid #1e2235; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #1e2235; }
+
+    .badge {
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+    .badge.fraud  { background: #2e1a1a; color: #f87171; border: 1px solid #4a2d2d; }
+    .badge.safe   { background: #1a2e1a; color: #4ade80; border: 1px solid #2d4a2d; }
+    .badge.high   { background: #2e1a1a; color: #f87171; }
+    .badge.medium { background: #2e2a1a; color: #fbbf24; }
+    .badge.low    { background: #1a2e1a; color: #4ade80; }
+
+    /* ── CHARTS ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── EMPTY STATE ── */
+    .empty { text-align: center; padding: 40px; color: #64748b; font-size: 14px; }
+
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .main-grid, .charts-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Bank<span>Guard</span></div>
+  <span style="color:#64748b; font-size:13px;">Fraud Detection Dashboard</span>
+  <div class="nav-badge">● API Connected</div>
+</nav>
+
+<div class="container">
+
+  <!-- STAT CARDS -->
+  <h2>Overview</h2>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Transactions</div>
+      <div class="stat-value purple" id="stat-total">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Legitimate</div>
+      <div class="stat-value green" id="stat-legit">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Fraudulent</div>
+      <div class="stat-value red" id="stat-fraud">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Fraud Rate</div>
+      <div class="stat-value amber" id="stat-rate">0%</div>
+    </div>
+  </div>
+
+  <!-- FORM + RESULT -->
+  <div class="main-grid">
+    <div class="card">
+      <h2>Analyze Transaction</h2>
+      <div class="form-group">
+        <label>Transaction Amount (₹)</label>
+        <input type="number" id="amount" placeholder="e.g. 4500" min="1" />
+      </div>
+      <div class="form-group">
+        <label>Merchant Name</label>
+        <input type="text" id="merchant" placeholder="e.g. Flipkart" />
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="category">
+          <option>Shopping</option>
+          <option>Food & Dining</option>
+          <option>Travel</option>
+          <option>Electronics</option>
+          <option>Utilities</option>
+          <option>Entertainment</option>
+          <option>Healthcare</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <button class="btn" id="analyze-btn" onclick="analyzeTransaction()">
+        Analyze Transaction
+      </button>
+
+      <!-- RESULT -->
+      <div id="result-box">
+        <div class="result-header">
+          <span class="result-icon" id="res-icon"></span>
+          <span class="result-title" id="res-title"></span>
+        </div>
+        <div class="result-meta">
+          <span>Transaction ID<strong id="res-id"></strong></span>
+          <span>Risk Level<strong id="res-risk"></strong></span>
+          <span>Amount<strong id="res-amount"></strong></span>
+          <span>Timestamp<strong id="res-time"></strong></span>
+        </div>
+        <div class="risk-bar-wrap">
+          <div class="risk-bar-label">Fraud Probability: <span id="res-prob"></span></div>
+          <div class="risk-bar-bg">
+            <div class="risk-bar-fill" id="res-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECENT TRANSACTIONS TABLE -->
+    <div class="card">
+      <h2>Recent Transactions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Amount</th>
+              <th>Merchant</th>
+              <th>Risk</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="txn-table-body">
+            <tr><td colspan="5" class="empty">No transactions yet. Analyze one!</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS -->
+  <div class="charts-grid">
+    <div class="card">
+      <h2>Fraud vs Legitimate</h2>
+      <div class="chart-wrap">
+        <canvas id="donut-chart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Transaction Amounts</h2>
+      <div class="chart-wrap">
+        <canvas id="bar-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API = "http://localhost:5000";
+
+  // ── Chart setup ──
+  const donutCtx = document.getElementById("donut-chart").getContext("2d");
+  const barCtx   = document.getElementById("bar-chart").getContext("2d");
+
+  const donutChart = new Chart(donutCtx, {
+    type: "doughnut",
+    data: {
+      labels: ["Legitimate", "Fraudulent"],
+      datasets: [{
+        data: [1, 0],
+        backgroundColor: ["#4ade80", "#f87171"],
+        borderColor: ["#1a2e1a", "#2e1a1a"],
+        borderWidth: 3
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: "#94a3b8", font: { size: 13 } } }
+      },
+      cutout: "65%"
+    }
+  });
+
+  const barChart = new Chart(barCtx, {
+    type: "bar",
+    data: {
+      labels: [],
+      datasets: [
+        { label: "Legitimate (₹)", data: [], backgroundColor: "#4ade8066" },
+        { label: "Fraudulent (₹)",  data: [], backgroundColor: "#f8717166" }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: "#64748b" }, grid: { color: "#1e2235" } },
+        y: { ticks: { color: "#64748b" }, grid: { color: "#1e2235" } }
+      },
+      plugins: { legend: { labels: { color: "#94a3b8" } } }
+    }
+  });
+
+  // ── Analyze transaction ──
+  async function analyzeTransaction() {
+    const amount   = document.getElementById("amount").value;
+    const merchant = document.getElementById("merchant").value || "Unknown";
+    const category = document.getElementById("category").value;
+
+    if (!amount || amount <= 0) {
+      alert("Please enter a valid amount.");
+      return;
+    }
+
+    const btn = document.getElementById("analyze-btn");
+    btn.disabled = true;
+    btn.textContent = "Analyzing...";
+
+    try {
+      const res  = await fetch(`${API}/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: parseFloat(amount), merchant, category })
+      });
+      const data = await res.json();
+
+      showResult(data);
+      await refreshDashboard();
+    } catch (e) {
+      alert("Could not connect to API. Make sure app.py is running on port 5000.");
+    }
+
+    btn.disabled = false;
+    btn.textContent = "Analyze Transaction";
+  }
+
+  // ── Show result box ──
+  function showResult(d) {
+    const box = document.getElementById("result-box");
+    const isFraud = d.is_fraud;
+    const prob    = d.fraud_probability;
+    const level   = d.risk_level;
+
+    let cls   = prob > 70 ? "fraud" : prob > 30 ? "medium" : "safe";
+    let icon  = prob > 70 ? "🚨" : prob > 30 ? "⚠️" : "✅";
+    let title = prob > 70 ? "FRAUDULENT TRANSACTION DETECTED"
+              : prob > 30 ? "SUSPICIOUS — Manual Review Suggested"
+              :             "LEGITIMATE TRANSACTION";
+
+    box.className = `result-box ${cls}`;
+    box.style.display = "block";
+
+    document.getElementById("res-icon").textContent  = icon;
+    document.getElementById("res-title").textContent = title;
+    document.getElementById("res-title").className   = `result-title ${cls}`;
+    document.getElementById("res-id").textContent    = d.transaction_id;
+    document.getElementById("res-risk").textContent  = level;
+    document.getElementById("res-amount").textContent= `₹${d.amount.toLocaleString()}`;
+    document.getElementById("res-time").textContent  = d.timestamp;
+    document.getElementById("res-prob").textContent  = `${prob}%`;
+
+    const bar = document.getElementById("res-bar");
+    bar.style.width = `${prob}%`;
+    bar.style.background = prob > 70 ? "#f87171" : prob > 30 ? "#fbbf24" : "#4ade80";
+  }
+
+  // ── Refresh stats + table + charts ──
+  async function refreshDashboard() {
+    const [statsRes, txnRes] = await Promise.all([
+      fetch(`${API}/stats`),
+      fetch(`${API}/transactions`)
+    ]);
+    const stats = await statsRes.json();
+    const txns  = await txnRes.json();
+
+    // Stats
+    document.getElementById("stat-total").textContent = stats.total;
+    document.getElementById("stat-legit").textContent = stats.legit_count;
+    document.getElementById("stat-fraud").textContent = stats.fraud_count;
+    document.getElementById("stat-rate").textContent  = `${stats.fraud_rate}%`;
+
+    // Donut
+    donutChart.data.datasets[0].data = [stats.legit_count, stats.fraud_count];
+    donutChart.update();
+
+    // Bar chart (last 8 transactions)
+    const recent = txns.slice(0, 8).reverse();
+    barChart.data.labels = recent.map(t => t.merchant || t.transaction_id.slice(-4));
+    barChart.data.datasets[0].data = recent.map(t => t.is_fraud ? 0 : t.amount);
+    barChart.data.datasets[1].data = recent.map(t => t.is_fraud ? t.amount : 0);
+    barChart.update();
+
+    // Table
+    const tbody = document.getElementById("txn-table-body");
+    if (txns.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty">No transactions yet.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = txns.slice(0, 10).map(t => `
+      <tr>
+        <td style="color:#7c6af7">${t.transaction_id}</td>
+        <td>₹${t.amount.toLocaleString()}</td>
+        <td>${t.merchant}</td>
+        <td><span class="badge ${t.risk_level.toLowerCase()}">${t.risk_level}</span></td>
+        <td><span class="badge ${t.is_fraud ? 'fraud' : 'safe'}">${t.is_fraud ? 'FRAUD' : 'SAFE'}</span></td>
+      </tr>
+    `).join("");
+  }
+
+  // Load on page open
+  refreshDashboard().catch(() => {});
+</script>
+</body>
+</html>
