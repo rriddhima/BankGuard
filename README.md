@@ -15,9 +15,7 @@ A full-stack machine learning project that detects fraudulent bank transactions 
 
 | Dashboard Overview | Fraud Alert |
 |---|---|
-| *<img width="1885" height="964" alt="image" src="https://github.com/user-attachments/assets/fffd0b9d-3833-4335-909b-cebd28295e5b" />
-* | *<img width="1887" height="911" alt="image" src="https://github.com/user-attachments/assets/3e486f98-25f3-41ad-a8f1-e41ba0ab190e" />
-* |
+| *<img width="1885" height="964" alt="image" src="https://github.com/user-attachments/assets/fffd0b9d-3833-4335-909b-cebd28295e5b" />* | *<img width="631" height="325" alt="image" src="https://github.com/user-attachments/assets/ab4ba165-a70f-470c-965e-47694a8552e0" />* |
 
 ---
 
