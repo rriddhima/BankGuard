@@ -28,8 +28,8 @@ CORS(app)
 
 print("Loading fraud detection model...")
 
-MODEL_PATH = "model.pkl"
-SCALER_PATH = "scaler.pkl"
+MODEL_PATH = "api/model.pkl"
+SCALER_PATH = "api/scaler.pkl"
 
 if not os.path.exists(MODEL_PATH):
     print("model.pkl not found! Run train_model.py first.")
