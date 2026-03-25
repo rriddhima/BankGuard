@@ -15,7 +15,9 @@ A full-stack machine learning project that detects fraudulent bank transactions 
 
 | Dashboard Overview | Fraud Alert |
 |---|---|
-| *(Add your screenshot here)* | *(Add your screenshot here)* |
+| *<img width="1885" height="964" alt="image" src="https://github.com/user-attachments/assets/fffd0b9d-3833-4335-909b-cebd28295e5b" />
+* | *<img width="1887" height="911" alt="image" src="https://github.com/user-attachments/assets/3e486f98-25f3-41ad-a8f1-e41ba0ab190e" />
+* |
 
 ---
 
@@ -184,7 +186,6 @@ curl -X POST http://localhost:5000/predict \
 ## 👤 Author
 
 **RIDDHIMA**
-- GitHub: [@rriddhima](https://github.com/rriddhima)
 
 ---
 
